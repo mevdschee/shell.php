@@ -43,7 +43,7 @@ function ondata(str)
   newText.innerHTML = text;
   var history = document.getElementById('history');
   var iscd = text.split("\\n")[0].indexOf('\$ cd ')>=0;
-  if (iscd) history.innerHTML="";
+  //if (iscd) history.innerHTML="";
   history.appendChild(newText);
   document.getElementById('dir').innerHTML=data.dir;
   document.forms[0].elements[0].value = "";
